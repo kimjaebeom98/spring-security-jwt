@@ -2,23 +2,34 @@ package com.cos.jwt.config.jwt;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.security.Key;
+import java.util.Base64;
+import java.util.Date;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.keygen.BytesKeyGenerator;
+import org.springframework.security.crypto.keygen.KeyGenerators;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.stereotype.Component;
 
 import com.cos.jwt.config.auth.PrincipalDetails;
 import com.cos.jwt.model.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 
 
@@ -31,6 +42,10 @@ import lombok.RequiredArgsConstructor;
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter{
 	
 	private final AuthenticationManager authenticationManager;
+	
+	@Value("${jwt.secret}")
+    private String secretKeyPlain;
+	
 	
 //	public JwtAuthenticationFilter(AuthenticationManager authenticationManger) {
 //		super(authenticationManger);
@@ -89,8 +104,30 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 	protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
 			Authentication authResult) throws IOException, ServletException {
 		System.out.println("인증 완료됨");
-		super.successfulAuthentication(request, response, chain, authResult);
+		
+		//Authentication에 있는 정보로 JWT Token 생성해서 response에 담아주기
+		PrincipalDetails principalDetailis = (PrincipalDetails) authResult.getPrincipal();
+		
+		// JWT 토큰 생성
+	    String jwtToken = Jwts.builder()
+	            .setSubject(principalDetailis.getUsername())
+	            .setExpiration(new Date(System.currentTimeMillis() + (60000*30))) // 만료시간 : 현재시간 + 30분
+	            .claim("username", principalDetailis.getUsername())
+	            .claim("authorities", principalDetailis.getAuthorities())
+	            .signWith(getSecretKey(), SignatureAlgorithm.HS512)
+	            .compact();
+	    // jwtToken을 jwt.io에서 암, 복호화 해보면 정보가 보임
+	    System.out.println(jwtToken);
+	    // JWT 토큰을 응답 헤더에 추가
+	    response.addHeader("Authorization", "Bearer " + jwtToken);
+		
 	}
+	// BytesKeyGenerator를 사용하여 임의의 키를 생성하고, Keys.hmacShaKeyFor를 통해 Key 객체로 변환합니다.
+	private Key getSecretKey() {
+		BytesKeyGenerator keyGenerator = KeyGenerators.shared(64);
+        byte[] keyBytes = keyGenerator.generateKey();
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
 
 	
 }

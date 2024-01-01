@@ -17,6 +17,7 @@ public class NoPasswordAuthenticationProvider implements AuthenticationProvider{
 	
 	@Override
 	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+		System.out.println("커스텀프로바이더 테스트");
 		String username = authentication.getName();
 		UserDetails userDetails = principalDetailsService.loadUserByUsername(username);
 		return new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
