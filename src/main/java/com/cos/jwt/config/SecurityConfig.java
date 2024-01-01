@@ -6,10 +6,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.web.filter.CorsFilter;
 
 import com.cos.jwt.filter.MyFilter1;
+import com.cos.jwt.filter.MyFilter3;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +24,9 @@ public class SecurityConfig {
 	
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+		// MyFilter3는 시큐리티가 동작하기 전에 돌아야 하니깐 필터 체인 앞단에 위치하도록 함
+		// 왜냐하면 MyFilter3가 컨트롤러 요청을 금지 시키니깐 잘못된 헤더의 Authorization이면
+		http.addFilterBefore(new MyFilter3(), UsernamePasswordAuthenticationFilter.class);
 		http.csrf().disable();
 		// 세션 사용 X
 		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
