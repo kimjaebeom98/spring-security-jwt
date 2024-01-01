@@ -41,16 +41,16 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter{
 	
-	private final AuthenticationManager authenticationManager;
+	private AuthenticationManager authenticationManager;
 	
-	@Value("${jwt.secret}")
-    private String secretKeyPlain;
+	private Key key;
 	
 	
-//	public JwtAuthenticationFilter(AuthenticationManager authenticationManger) {
-//		super(authenticationManger);
-//		this.authenticationManager = authenticationManager;
-//	}
+	public JwtAuthenticationFilter(AuthenticationManager authenticationManager, @Value("${jwt.secret}") String secret) {
+	    byte[] keyBytes = Decoders.BASE64.decode(secret);
+	    this.key = Keys.hmacShaKeyFor(keyBytes);
+	    this.authenticationManager = authenticationManager;
+	}
 	
 	// /login 요청을 하면 로그인 시도를 위해서 실행되는 함수
 	// 1. username, password 받고
@@ -114,7 +114,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 	            .setExpiration(new Date(System.currentTimeMillis() + (60000*30))) // 만료시간 : 현재시간 + 30분
 	            .claim("username", principalDetailis.getUsername())
 	            .claim("authorities", principalDetailis.getAuthorities())
-	            .signWith(getSecretKey(), SignatureAlgorithm.HS512)
+	            .signWith(key, SignatureAlgorithm.HS512)
 	            .compact();
 	    // jwtToken을 jwt.io에서 암, 복호화 해보면 정보가 보임
 	    System.out.println(jwtToken);
@@ -123,11 +123,12 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
 		
 	}
 	// BytesKeyGenerator를 사용하여 임의의 키를 생성하고, Keys.hmacShaKeyFor를 통해 Key 객체로 변환합니다.
-	private Key getSecretKey() {
-		BytesKeyGenerator keyGenerator = KeyGenerators.shared(64);
-        byte[] keyBytes = keyGenerator.generateKey();
-        return Keys.hmacShaKeyFor(keyBytes);
-    }
+//	private Key getSecretKey() {
+//		System.out.println("secretKey : " + key);
+//		BytesKeyGenerator keyGenerator = KeyGenerators.shared(64);
+//        byte[] keyBytes = keyGenerator.generateKey();
+//        return Keys.hmacShaKeyFor(keyBytes);
+//    }
 
 	
 }

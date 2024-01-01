@@ -1,5 +1,6 @@
 package com.cos.jwt.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,9 +18,10 @@ import org.springframework.web.filter.CorsFilter;
 
 import com.cos.jwt.config.auth.PrincipalDetailsService;
 import com.cos.jwt.config.jwt.JwtAuthenticationFilter;
+import com.cos.jwt.config.jwt.JwtAuthorizationFilter;
 import com.cos.jwt.config.jwt.NoPasswordAuthenticationProvider;
-import com.cos.jwt.filter.MyFilter1;
-import com.cos.jwt.filter.MyFilter3;
+import com.cos.jwt.config.repository.UserRepository;
+
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,6 +32,10 @@ public class SecurityConfig {
 	
 	private final CorsFilter corsFilter;
 	private final PrincipalDetailsService principalDetailsService;
+	private final UserRepository userRepository;
+	
+	@Value("${jwt.secret}")
+    private String secretKey; // 프로퍼티 주입
 	
 	// 해당 메서드의 리턴되는 오브젝트를 loC로 등록
 	@Bean
@@ -70,7 +76,8 @@ public class SecurityConfig {
 		public void configure(HttpSecurity http) throws Exception {
 			AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
 			http
-					.addFilter(new JwtAuthenticationFilter(authenticationManager));
+					.addFilter(new JwtAuthenticationFilter(authenticationManager, secretKey))
+					.addFilter(new JwtAuthorizationFilter(authenticationManager, secretKey, userRepository));
 		}
 	}
 	
