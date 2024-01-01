@@ -22,7 +22,7 @@ public class User {
 	private String password;
 	private String roles; // USER, ADMIN
 	
-	private List<String> getRoleList(){
+	public List<String> getRoleList(){
 		if(this.getRoles().length() > 0) {
 			return Arrays.asList(this.roles.split(","));
 		}
