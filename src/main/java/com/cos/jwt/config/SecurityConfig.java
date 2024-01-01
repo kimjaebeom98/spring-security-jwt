@@ -3,16 +3,21 @@ package com.cos.jwt.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 import org.springframework.web.filter.CorsFilter;
 
+import com.cos.jwt.config.auth.PrincipalDetailsService;
 import com.cos.jwt.config.jwt.JwtAuthenticationFilter;
+import com.cos.jwt.config.jwt.NoPasswordAuthenticationProvider;
 import com.cos.jwt.filter.MyFilter1;
 import com.cos.jwt.filter.MyFilter3;
 
@@ -24,6 +29,13 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 	
 	private final CorsFilter corsFilter;
+	private final PrincipalDetailsService principalDetailsService;
+	
+	// 해당 메서드의 리턴되는 오브젝트를 loC로 등록
+	@Bean
+	public BCryptPasswordEncoder encodePwd() {
+		return new BCryptPasswordEncoder();
+	}
 	
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -61,4 +73,15 @@ public class SecurityConfig {
 					.addFilter(new JwtAuthenticationFilter(authenticationManager));
 		}
 	}
+	
+	@Bean
+    public AuthenticationProvider noPasswordAuthenticationProvider() {
+        return new NoPasswordAuthenticationProvider(principalDetailsService);
+    }
+	
+	@Bean
+    public AuthenticationManager authenticationManager() {
+        return new ProviderManager(noPasswordAuthenticationProvider());
+    }
+	
 }
